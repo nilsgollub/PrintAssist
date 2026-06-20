@@ -25,6 +25,7 @@ import yaml
 SUMATRA_SEARCH_PATHS = [
     r"C:\Program Files\SumatraPDF\SumatraPDF.exe",
     r"C:\Program Files (x86)\SumatraPDF\SumatraPDF.exe",
+    os.path.expandvars(r"%LOCALAPPDATA%\SumatraPDF\SumatraPDF.exe"),
     shutil.which("SumatraPDF") or "",
 ]
 
