@@ -64,9 +64,19 @@ pip install -r requirements.txt
 
 ## Noch offen / vom Nutzer zu erledigen
 
-- [ ] Echte Druckernamen in `config/printers.yaml` eintragen
-- [ ] SumatraPDF installieren (falls noch nicht vorhanden)
-- [ ] LibreOffice installieren (falls noch nicht vorhanden)
-- [ ] `pip install -r requirements.txt` auf beiden Geräten ausführen
+- [x] Druckernamen in `config/printers.yaml` eingetragen (Brother MFC-L8390CDW series)
+- [x] SumatraPDF installiert
+- [x] `pip install -r requirements.txt` auf Desktop ausgeführt
+- [ ] `setup.ps1` auf Surface Pro 7 ausführen
 - [ ] `/mcp` Authentifizierung auf jedem Gerät einmalig durchführen
 - [ ] GitHub-Remote einrichten, damit das Repo auf beiden Geräten synchron bleibt
+
+## Mittelfristig: Android-Anbindung via Claude Dispatch
+
+Claude Dispatch (Claude Mobile App → "Claude arbeitet von Ihrem Computer aus") ist die
+sauberste Lösung: Datei vom Handy schicken, Druckanweisung in Freitext, Claude führt
+die Skripte direkt aus – kein Telegram-Bot, kein extra Setup.
+
+**Voraussetzung:** Ein dauerhaft laufendes Gerät (Homeserver geplant).
+Die Skripte (print.py, pdf_tools.py, office_tools.py) sind bereits Dispatch-kompatibel –
+kein Umbau nötig, sobald der Server steht.
