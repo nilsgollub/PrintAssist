@@ -369,6 +369,66 @@ def impose_2up(
     return out
 
 
+def preview_pdf(
+    input_path: str | Path,
+    output_path: str | Path | None = None,
+    page_numbers: Sequence[int] | None = None,
+    dpi: int = 150,
+) -> list[Path]:
+    """
+    Render PDF pages as PNG images for preview before printing.
+
+    Natural language triggers:
+      "Vorschau", "preview", "zeig mir wie es aussieht", "vorher anschauen",
+      "bevor ich drucke", "screenshot vom PDF", "als Bild exportieren"
+
+    Args:
+        input_path:   Source PDF.
+        output_path:  Output file path (for single page) or directory (for multiple).
+                      Defaults to a temp file next to the source.
+        page_numbers: 1-based pages to render. None = all pages.
+        dpi:          Render resolution (default 150 for quick preview).
+
+    Returns:
+        List of paths to the created PNG files.
+    """
+    try:
+        import fitz  # pymupdf
+    except ImportError:
+        raise ImportError("pymupdf nicht installiert. Führe aus: pip install pymupdf")
+
+    src = Path(input_path)
+    doc = fitz.open(str(src))
+    total = doc.page_count
+    targets = list(page_numbers) if page_numbers else list(range(1, total + 1))
+
+    if output_path is None:
+        out_dir = src.parent
+    else:
+        out_dir = Path(output_path) if len(targets) > 1 else Path(output_path).parent
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    matrix = fitz.Matrix(dpi / 72, dpi / 72)
+    results: list[Path] = []
+
+    for n in targets:
+        if not (1 <= n <= total):
+            raise ValueError(f"Seite {n} existiert nicht ({total} Seiten).")
+        page = doc[n - 1]
+        pix = page.get_pixmap(matrix=matrix, alpha=False)
+
+        if len(targets) == 1 and output_path and not Path(output_path).is_dir():
+            png_path = Path(output_path)
+        else:
+            png_path = out_dir / f"{src.stem}_preview_p{n}.png"
+
+        pix.save(str(png_path))
+        results.append(png_path)
+
+    doc.close()
+    return results
+
+
 def compress_pdf(
     input_path: str | Path,
     output_path: str | Path,
