@@ -15,14 +15,46 @@ Ein Projekt, das Drucken, PDF-Bearbeitung, Office-Bearbeitung und Foto-Bearbeitu
 |---|---|
 | PDF: Merge, Split, Rotation, Wasserzeichen, Seitenbereich | `pypdf` / `pikepdf` (`scripts/pdf_tools.py`) |
 | PDF: reinen Text ändern | **nicht automatisierbar** – Nutzer auf Acrobat verweisen |
+| PDF verkleinern / optimieren | `pdf_tools.compress_pdf()` (pikepdf) |
 | Office (Word/Excel/PowerPoint): Inhalte bearbeiten | `python-docx`, `openpyxl`, `python-pptx` (`scripts/office_tools.py`) |
 | Office → PDF konvertieren (vor dem Drucken) | LibreOffice headless |
-| Foto: Belichtung, Crop, Hintergrund entfernen, Presets | Adobe-Connector (Lightroom/Photoshop-Tools) |
 | PDF drucken | SumatraPDF CLI (`scripts/print.py`) |
 | Foto/Bild drucken | `scripts/print.py` (Pillow + win32print) |
 | Office-Datei drucken | erst → PDF (LibreOffice), dann SumatraPDF |
 
-Faustregel: Python zuerst, wenn es rein strukturelle/mechanische Änderungen sind (Seiten drehen, Format konvertieren). Adobe-Connector nur, wenn es um Bildqualität/Optik geht (Belichtung, Farbe, Freistellen) – dafür ist er klar besser als ein schnelles Skript.
+Faustregel: Python zuerst für strukturelle/mechanische Änderungen. Adobe-Connector für alles Optische/KI-gestützte.
+
+## Adobe CC – Tool-Routing
+
+| Aufgabe | Adobe-Tool |
+|---|---|
+| Belichtung, Helligkeit, Kontrast korrigieren | `image_adjust_exposure` / `image_adjust_brightness_and_contrast` |
+| Weißabgleich / Farbtemperatur | `image_adjust_color_temperature` |
+| Highlights & Schatten | `image_adjust_highlights` / `image_adjust_dark_portions` / `image_adjust_light_portions` |
+| Sättigung, Vibrance | `image_adjust_vibrance_and_saturation` |
+| Einzelne Farbe entsättigen / boosten | `image_adjust_single_color_saturation` |
+| HSL (Farbton, Sättigung, Helligkeit) | `image_adjust_hsl` |
+| Alles auf einmal (mehrere Anpassungen) | `image_apply_adjustments` |
+| Automatische Tonkorrektur | `image_apply_auto_tone` |
+| Lightroom-Preset anwenden | `image_apply_preset` (verfügbare Presets: `image_list_presets`) |
+| Gerade richten | `image_auto_straighten` |
+| Zuschneiden / auf Druckformat bringen | `image_crop_and_resize` / `image_crop_to_bounds` |
+| Bild KI-gestützt erweitern (Seitenverhältnis passt nicht) | `image_generative_expand` |
+| Hintergrund entfernen (Freistellen) | `image_remove_background` |
+| Motiv auswählen | `image_select_subject` |
+| Bereich per Text auswählen | `image_select_by_prompt` |
+| Bereich generativ auffüllen / ersetzen | `image_fill_area` |
+| Foto/Logo vektorisieren (für skalierbaren Druck) | `image_vectorize` |
+| Mehrere Fotos einheitlich bearbeiten (gleicher Look) | Skill `adobe-batch-edit-photos` |
+| Datei zu PDF konvertieren (Alternative zu LibreOffice) | `document_convert_pdf` |
+| CSV + InDesign-Template → personalisierte PDFs | `document_merge_data_layout` |
+| Unschärfe (Hintergrund weichzeichnen) | `image_apply_gaussian_blur` / `image_apply_lens_blur` |
+| Stileffekte (Körnung, Rauschen, Halftone, Tint) | `image_add_grain` / `image_add_noise` / `image_apply_halftone` / `image_apply_monochromatic_tint` |
+
+### Was Adobe CC nicht kann (direkt sagen, nicht versuchen)
+- PDF-Text bearbeiten ✗
+- Bild über natürliche Auflösung hinaus hochskalieren ✗
+- Hintergrund generativ neu erstellen (nur entfernen) ✗
 
 ## Druck-Workflow (SumatraPDF)
 
