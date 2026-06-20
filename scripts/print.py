@@ -272,7 +272,7 @@ def print_file(
                 f"Unterstützt: PDF, {', '.join(sorted(OFFICE_EXTENSIONS | IMAGE_EXTENSIONS))}"
             )
 
-    return f"Gedruckt: {path.name} → {printer_name}"
+    return f"Gedruckt: {path.name} -> {printer_name}"
 
 
 # ---------------------------------------------------------------------------

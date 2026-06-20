@@ -311,6 +311,64 @@ def extract_pages(
 # Compress (pikepdf)
 # ---------------------------------------------------------------------------
 
+def impose_2up(
+    input_path: str | Path,
+    output_path: str | Path,
+    page_numbers: Sequence[int] | None = None,
+) -> Path:
+    """
+    Place two copies of each page side by side on a single A4 landscape sheet.
+
+    Natural language triggers:
+      "zweimal nebeneinander", "2-up", "zwei Seiten auf ein Blatt",
+      "doppelt auf einer Seite", "Sparfunktion", "2 pro Seite"
+
+    Args:
+        input_path:   Source PDF.
+        output_path:  Where to write the imposed PDF.
+        page_numbers: 1-based list of pages to impose. None = all pages.
+
+    Returns:
+        Path to the output file.
+    """
+    from pypdf import PageObject, Transformation
+
+    reader = pypdf.PdfReader(str(input_path))
+    writer = pypdf.PdfWriter()
+    total = len(reader.pages)
+    targets = list(page_numbers) if page_numbers else list(range(1, total + 1))
+
+    # A4 landscape: 842 x 595 pt
+    out_w, out_h = 842.0, 595.0
+    slot_w = out_w / 2  # 421 pt per copy
+
+    for n in targets:
+        if not (1 <= n <= total):
+            raise ValueError(f"Seite {n} existiert nicht ({total} Seiten).")
+        src = reader.pages[n - 1]
+        src_w = float(src.mediabox.width)
+        src_h = float(src.mediabox.height)
+
+        scale = min(slot_w / src_w, out_h / src_h)
+        scaled_w = src_w * scale
+        scaled_h = src_h * scale
+
+        x1 = (slot_w - scaled_w) / 2
+        x2 = slot_w + (slot_w - scaled_w) / 2
+        y = (out_h - scaled_h) / 2
+
+        new_page = PageObject.create_blank_page(width=out_w, height=out_h)
+        new_page.merge_transformed_page(src, Transformation().scale(scale).translate(x1, y))
+        new_page.merge_transformed_page(src, Transformation().scale(scale).translate(x2, y))
+        writer.add_page(new_page)
+
+    out = Path(output_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with open(out, "wb") as f:
+        writer.write(f)
+    return out
+
+
 def compress_pdf(
     input_path: str | Path,
     output_path: str | Path,
