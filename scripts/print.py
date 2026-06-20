@@ -55,7 +55,13 @@ def find_executable(search_paths: list[str]) -> str | None:
 
 def load_printer_config() -> dict[str, Any]:
     if not CONFIG_PATH.exists():
-        raise FileNotFoundError(f"Druckerkonfiguration nicht gefunden: {CONFIG_PATH}")
+        example = CONFIG_PATH.parent / "printers.example.yaml"
+        raise FileNotFoundError(
+            f"Printer config not found: {CONFIG_PATH}\n"
+            f"Run setup.ps1 to generate it automatically, or copy "
+            f"{example} to {CONFIG_PATH} and fill in your printer name.\n"
+            f"List available printers with: wmic printer get name"
+        )
     with open(CONFIG_PATH, encoding="utf-8") as f:
         return yaml.safe_load(f)
 

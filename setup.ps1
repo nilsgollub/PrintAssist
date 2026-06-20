@@ -1,8 +1,8 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Einmaliges Setup für PrintAssist auf einem neuen Gerät.
-    Ausführen mit: powershell -ExecutionPolicy Bypass -File setup.ps1
+    One-command setup for PrintAssist on any Windows device.
+    Run with: powershell -ExecutionPolicy Bypass -File setup.ps1
 #>
 
 Set-StrictMode -Version Latest
@@ -13,103 +13,133 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 function Write-Step([string]$msg) {
     Write-Host "`n==> $msg" -ForegroundColor Cyan
 }
-
 function Write-OK([string]$msg) {
     Write-Host "    OK: $msg" -ForegroundColor Green
 }
-
 function Write-Skip([string]$msg) {
-    Write-Host "    Übersprungen: $msg bereits installiert." -ForegroundColor Yellow
+    Write-Host "    Skipped: $msg already installed." -ForegroundColor Yellow
+}
+function Write-Warn([string]$msg) {
+    Write-Host "    WARN: $msg" -ForegroundColor Red
 }
 
 # ---------------------------------------------------------------------------
 # 1. SumatraPDF
 # ---------------------------------------------------------------------------
-Write-Step "SumatraPDF prüfen / installieren"
+Write-Step "SumatraPDF"
 
 $sumatraPaths = @(
     "$env:LOCALAPPDATA\SumatraPDF\SumatraPDF.exe",
     "C:\Program Files\SumatraPDF\SumatraPDF.exe",
     "C:\Program Files (x86)\SumatraPDF\SumatraPDF.exe"
 )
-$sumatraFound = $sumatraPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
-
-if ($sumatraFound) {
-    Write-Skip "SumatraPDF ($sumatraFound)"
+if ($sumatraPaths | Where-Object { Test-Path $_ } | Select-Object -First 1) {
+    Write-Skip "SumatraPDF"
 } else {
     winget install SumatraPDF.SumatraPDF --silent --accept-package-agreements --accept-source-agreements
-    Write-OK "SumatraPDF installiert"
+    Write-OK "SumatraPDF installed"
 }
 
 # ---------------------------------------------------------------------------
 # 2. LibreOffice
 # ---------------------------------------------------------------------------
-Write-Step "LibreOffice prüfen / installieren"
+Write-Step "LibreOffice"
 
 $librePaths = @(
     "C:\Program Files\LibreOffice\program\soffice.exe",
     "C:\Program Files (x86)\LibreOffice\program\soffice.exe"
 )
-$libreFound = $librePaths | Where-Object { Test-Path $_ } | Select-Object -First 1
-
-if ($libreFound) {
-    Write-Skip "LibreOffice ($libreFound)"
+if ($librePaths | Where-Object { Test-Path $_ } | Select-Object -First 1) {
+    Write-Skip "LibreOffice"
 } else {
     winget install TheDocumentFoundation.LibreOffice --silent --accept-package-agreements --accept-source-agreements
-    Write-OK "LibreOffice installiert"
+    Write-OK "LibreOffice installed"
 }
 
 # ---------------------------------------------------------------------------
-# 3. Python-Pakete
+# 3. Python packages
 # ---------------------------------------------------------------------------
-Write-Step "Python-Pakete installieren (pip)"
+Write-Step "Python packages (pip)"
 
-$requirementsFile = Join-Path $scriptDir "requirements.txt"
-if (-not (Test-Path $requirementsFile)) {
-    Write-Error "requirements.txt nicht gefunden: $requirementsFile"
+$req = Join-Path $scriptDir "requirements.txt"
+if (-not (Test-Path $req)) {
+    Write-Error "requirements.txt not found at: $req"
     exit 1
 }
-
-pip install -r $requirementsFile
-Write-OK "Python-Pakete installiert"
+pip install -r $req --quiet
+Write-OK "Python packages installed"
 
 # ---------------------------------------------------------------------------
-# 4. Hostname in printers.yaml eintragen (falls noch Platzhalter)
+# 4. Printer config (auto-detect)
 # ---------------------------------------------------------------------------
-Write-Step "Drucker-Konfiguration prüfen"
+Write-Step "Printer configuration"
 
 $printerConfig = Join-Path $scriptDir "config\printers.yaml"
-$hostname = $env:COMPUTERNAME
-$content = Get-Content $printerConfig -Raw
+$exampleConfig = Join-Path $scriptDir "config\printers.example.yaml"
 
-if ($content -match '<HOSTNAME') {
-    Write-Host "    Hostname dieses Geräts: $hostname" -ForegroundColor White
-    Write-Host "    Drucker auf diesem Gerät:" -ForegroundColor White
-    try {
-        Get-Printer | Select-Object -ExpandProperty Name | ForEach-Object { Write-Host "      - $_" }
-    } catch {
-        wmic printer get name 2>$null
-    }
-    Write-Host ""
-    Write-Host "    ACHTUNG: Trage Hostname und Druckernamen manuell in config\printers.yaml ein," -ForegroundColor Red
-    Write-Host "    falls dieses Gerät einen anderen Drucker verwendet." -ForegroundColor Red
+if (Test-Path $printerConfig) {
+    Write-Skip "config\printers.yaml (already exists)"
 } else {
-    Write-OK "printers.yaml enthält keine Platzhalter mehr"
+    # Detect real printers (exclude virtual/software printers)
+    $virtualKeywords = @("PDF", "XPS", "OneNote", "Fax", "Microsoft", "Adobe PDF")
+    $allPrinters = @(Get-Printer | Select-Object -ExpandProperty Name)
+    $realPrinters = $allPrinters | Where-Object {
+        $name = $_
+        -not ($virtualKeywords | Where-Object { $name -like "*$_*" })
+    }
+
+    if ($realPrinters.Count -eq 0) {
+        Write-Warn "No physical printers detected. Using example config."
+        Copy-Item $exampleConfig $printerConfig
+    } else {
+        $chosen = $null
+
+        if ($realPrinters.Count -eq 1) {
+            $chosen = $realPrinters[0]
+            Write-Host "    Detected printer: $chosen" -ForegroundColor White
+        } else {
+            Write-Host "    Detected printers:" -ForegroundColor White
+            for ($i = 0; $i -lt $realPrinters.Count; $i++) {
+                Write-Host "      [$($i+1)] $($realPrinters[$i])"
+            }
+            $sel = Read-Host "    Select printer number (default: 1)"
+            if ([string]::IsNullOrWhiteSpace($sel)) { $sel = "1" }
+            $idx = [int]$sel - 1
+            if ($idx -lt 0 -or $idx -ge $realPrinters.Count) { $idx = 0 }
+            $chosen = $realPrinters[$idx]
+        }
+
+        $hostname = $env:COMPUTERNAME
+
+        @"
+# PrintAssist printer configuration
+# Generated by setup.ps1 on $hostname
+
+default:
+  printer_name: "$chosen"
+
+hosts:
+  ${hostname}:
+    printer_name: "$chosen"
+"@ | Set-Content $printerConfig -Encoding UTF8
+
+        Write-OK "config\printers.yaml created (printer: $chosen, host: $hostname)"
+    }
 }
 
 # ---------------------------------------------------------------------------
-# 5. Adobe MCP-Hinweis
+# 5. Adobe MCP hint
 # ---------------------------------------------------------------------------
-Write-Step "Adobe MCP-Connector"
-Write-Host "    Öffne Claude Code und führe einmalig aus: /mcp" -ForegroundColor White
-Write-Host "    Dann 'adobe-creativity' auswählen und einloggen." -ForegroundColor White
+Write-Step "Adobe CC (optional)"
+Write-Host "    For photo editing features, open Claude Code and run: /mcp" -ForegroundColor White
+Write-Host "    Then select 'adobe-creativity' and sign in." -ForegroundColor White
 
 # ---------------------------------------------------------------------------
-# Fertig
+# Done
 # ---------------------------------------------------------------------------
 Write-Host ""
-Write-Host "======================================" -ForegroundColor Green
-Write-Host "  Setup abgeschlossen!" -ForegroundColor Green
-Write-Host "  Teste mit:" -ForegroundColor Green
-Write-Host "    python scripts\print.py <datei.pdf>" -ForegroundColor Green
-Write-Host "======================================" -ForegroundColor Green
+Write-Host "============================================" -ForegroundColor Green
+Write-Host "  PrintAssist setup complete!" -ForegroundColor Green
+Write-Host "  Test with:" -ForegroundColor Green
+Write-Host "    python scripts\print.py <file.pdf>" -ForegroundColor Green
+Write-Host "============================================" -ForegroundColor Green

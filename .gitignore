@@ -11,3 +11,4 @@ output/
 *.tmp.pptx
 .env
 preview.png
+config/printers.yaml

@@ -1,6 +1,0 @@
-default:
-  printer_name: "Brother MFC-L8390CDW series"
-
-hosts:
-  DESKTOP-CLF8RBQ:
-    printer_name: "Brother MFC-L8390CDW series"

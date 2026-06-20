@@ -95,14 +95,17 @@ pip install -r requirements.txt
 #    In Claude Code: /mcp  → adobe-creativity → einloggen
 ```
 
-## Noch offen / vom Nutzer zu erledigen
+## Einrichtung auf neuem Gerät
 
-- [x] Druckernamen in `config/printers.yaml` eingetragen (Brother MFC-L8390CDW series)
-- [x] SumatraPDF installiert
-- [x] `pip install -r requirements.txt` auf Desktop ausgeführt
-- [ ] `setup.ps1` auf Surface Pro 7 ausführen
-- [ ] `/mcp` Authentifizierung auf jedem Gerät einmalig durchführen
-- [ ] GitHub-Remote einrichten, damit das Repo auf beiden Geräten synchron bleibt
+```powershell
+git clone https://github.com/nilsgollub/PrintAssist.git
+cd PrintAssist
+powershell -ExecutionPolicy Bypass -File setup.ps1
+# danach: /mcp -> adobe-creativity einloggen (optional)
+```
+
+`setup.ps1` erkennt Drucker automatisch und schreibt `config/printers.yaml`.
+Die Datei ist gitignored — jedes Gerät hat seine eigene lokale Kopie.
 
 ## Mittelfristig: Android-Anbindung via Claude Dispatch
 
