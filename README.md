@@ -108,7 +108,7 @@ Drop a file into the chat and describe what you want:
 Install the skill from [ClawHub](https://clawhub.sh):
 
 ```bash
-clawhub install printassist
+clawhub install printassist --workdir "$env:USERPROFILE\.openclaw" --dir plugin-skills
 ```
 
 Then talk to OpenClaw naturally on any connected channel (Telegram, WhatsApp, etc.).
