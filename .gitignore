@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.log
+output/
+*.tmp.pdf
+*.tmp.docx
+*.tmp.xlsx
+*.tmp.pptx
+.env
