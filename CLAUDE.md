@@ -71,7 +71,7 @@ Faustregel: Python zuerst für strukturelle/mechanische Änderungen. Adobe-Conne
 - Sprache: Deutsch oder Englisch. Andere Sprachen automatisch übersetzen.
 - Bei Adobe-Connector-Aufrufen: Tool-Limitierungen beachten (kein PDF-Textediting, kein Upscaling, keine generative Hintergrund-Ersetzung) – wenn eine Anfrage das verlangt, das dem Nutzer kurz sagen statt es stillschweigend zu versuchen.
 - Geräteerkennung über `socket.gethostname()` in Python, Mapping in `config/printers.yaml`.
-- **Vorschau-Workflow**: Immer erst `preview_pdf()` aufrufen, dann die PNG-Datei mit dem `Read`-Tool öffnen — das rendert das Bild inline im Chat. Niemals `SendUserFile` für Previews verwenden (zeigt nur einen Datei-Link).
+- **Vorschau-Workflow**: `preview_pdf()` aufrufen, dann PNG mit `Start-Process` in der Windows Fotos-App öffnen. Weder `SendUserFile` noch `Read` zeigen Bilder inline für den Nutzer im VSCode-Extension-Chat.
 
 ## Einmaliges Setup pro Gerät
 
