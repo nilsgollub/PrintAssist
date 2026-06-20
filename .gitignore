@@ -10,3 +10,4 @@ output/
 *.tmp.xlsx
 *.tmp.pptx
 .env
+preview.png

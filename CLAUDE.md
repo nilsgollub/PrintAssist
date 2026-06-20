@@ -71,7 +71,7 @@ Faustregel: Python zuerst für strukturelle/mechanische Änderungen. Adobe-Conne
 - Sprache: Deutsch oder Englisch. Andere Sprachen automatisch übersetzen.
 - Bei Adobe-Connector-Aufrufen: Tool-Limitierungen beachten (kein PDF-Textediting, kein Upscaling, keine generative Hintergrund-Ersetzung) – wenn eine Anfrage das verlangt, das dem Nutzer kurz sagen statt es stillschweigend zu versuchen.
 - Geräteerkennung über `socket.gethostname()` in Python, Mapping in `config/printers.yaml`.
-- **Vorschau-Workflow**: `preview_pdf()` aufrufen, dann PNG mit `Start-Process` in der Windows Fotos-App öffnen. Weder `SendUserFile` noch `Read` zeigen Bilder inline für den Nutzer im VSCode-Extension-Chat.
+- **Vorschau-Workflow**: `preview_pdf()` aufrufen, PNG als `preview.png` in den Projektordner kopieren und dem Nutzer sagen, er soll es im VS Code Explorer anklicken. `Start-Process`/`Invoke-Item` funktionieren nicht (Sandbox). `SendUserFile` und `Read` zeigen keine Bilder inline im VSCode-Chat.
 
 ## Einmaliges Setup pro Gerät
 
