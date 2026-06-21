@@ -10,7 +10,7 @@ metadata:
       bins:
         - python
     os:
-      - windows
+      - win32
     install:
       - method: shell
         cmd: pip install -r requirements.txt
