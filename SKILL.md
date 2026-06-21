@@ -9,8 +9,6 @@ metadata:
     requires:
       bins:
         - python
-        - SumatraPDF
-        - soffice
     os:
       - windows
     install:
