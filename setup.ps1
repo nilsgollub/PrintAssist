@@ -128,7 +128,41 @@ hosts:
 }
 
 # ---------------------------------------------------------------------------
-# 5. Adobe MCP hint
+# 5. Claude Code skill (/print-assist)
+# ---------------------------------------------------------------------------
+Write-Step "Claude Code skill (/print-assist)"
+
+$claudeSkillDir = Join-Path $env:USERPROFILE ".claude\skills\print-assist"
+$claudeSkillFile = Join-Path $claudeSkillDir "SKILL.md"
+$claudeGlobal = Join-Path $env:USERPROFILE ".claude\CLAUDE.md"
+
+# Copy SKILL.md from repo into ~/.claude/skills/print-assist/
+if (-not (Test-Path $claudeSkillDir)) {
+    New-Item -ItemType Directory -Force $claudeSkillDir | Out-Null
+}
+Copy-Item (Join-Path $scriptDir "SKILL.md") $claudeSkillFile -Force
+Write-OK "SKILL.md -> $claudeSkillFile"
+
+# Register in ~/.claude/CLAUDE.md if not already there
+if (Test-Path $claudeGlobal) {
+    $content = Get-Content $claudeGlobal -Raw -ErrorAction SilentlyContinue
+    if ($content -notmatch "print-assist") {
+        $entry = @"
+
+# print-assist
+- **print-assist** (``~/.claude/skills/print-assist/SKILL.md``) - Dateien drucken (PDF, Word, Excel, PowerPoint, Fotos), PDF bearbeiten, Fotos via Adobe CC bearbeiten. Trigger: ``/print-assist``, oder wenn der Nutzer etwas drucken oder eine Datei vor dem Druck bearbeiten will.
+"@
+        Add-Content $claudeGlobal $entry -Encoding UTF8
+        Write-OK "Registered in ~/.claude/CLAUDE.md"
+    } else {
+        Write-Skip "/print-assist (already registered in CLAUDE.md)"
+    }
+} else {
+    Write-Warn "~/.claude/CLAUDE.md not found — Claude Code not installed yet? Install it and re-run setup.ps1."
+}
+
+# ---------------------------------------------------------------------------
+# 6. Adobe MCP hint
 # ---------------------------------------------------------------------------
 Write-Step "Adobe CC (optional)"
 Write-Host "    For photo editing features, open Claude Code and run: /mcp" -ForegroundColor White
@@ -140,6 +174,6 @@ Write-Host "    Then select 'adobe-creativity' and sign in." -ForegroundColor Wh
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Green
 Write-Host "  PrintAssist setup complete!" -ForegroundColor Green
-Write-Host "  Test with:" -ForegroundColor Green
-Write-Host "    python scripts\print.py <file.pdf>" -ForegroundColor Green
+Write-Host "  Open Claude Code, type /print-assist" -ForegroundColor Green
+Write-Host "  and drag in any file to print it." -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Green
