@@ -11,4 +11,5 @@ output/
 *.tmp.pptx
 .env
 preview.png
+poster_*.pdf
 config/printers.yaml

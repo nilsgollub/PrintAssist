@@ -369,6 +369,182 @@ def impose_2up(
     return out
 
 
+def tile_poster(
+    input_path: str | Path,
+    output_path: str | Path,
+    target_width_cm: float,
+    target_height_cm: float | None = None,
+    paper: str = "A4",
+    orientation: str = "portrait",
+    overlap_cm: float = 1.0,
+    margin_cm: float = 0.5,
+    dpi: int = 200,
+    fit: str = "cover",
+    page_number: int = 1,
+) -> dict:
+    """
+    Tile a single page/image across multiple sheets to build a large poster
+    that can be glued together (a.k.a. poster printing / "Plakatdruck").
+
+    Natural language triggers:
+      "auf mehrere Seiten verteilen", "großes Poster aus A4-Seiten",
+      "zusammenkleben", "Fläche abdecken", "tile poster", "split across pages",
+      "Bild größer drucken als A4", "über mehrere Blätter drucken"
+
+    The source page is scaled (aspect ratio preserved) to the requested physical
+    size, then sliced into A4 tiles. Each tile keeps an overlap strip so adjacent
+    sheets share content for easy gluing, and a thin gray frame marks the
+    printable edge as a cut/glue guide.
+
+    Args:
+        input_path:       Source PDF (vector or image).
+        output_path:      Where to write the multi-page tiled PDF.
+        target_width_cm:  Desired final poster width in cm.
+        target_height_cm: Desired final poster height in cm. None = derived from
+                          the source aspect ratio.
+        paper:            Tile paper size: A4 | A3 | Letter | Legal.
+        orientation:      Tile orientation: portrait | landscape.
+        overlap_cm:       Shared glue strip between neighbouring tiles.
+        margin_cm:        Unprintable/safety margin per tile edge.
+        dpi:              Render resolution of the poster raster.
+        fit:              "cover" (poster covers the target box, may overhang) or
+                          "contain" (poster fits inside the box, may leave gaps).
+        page_number:      1-based source page to use.
+
+    Returns:
+        dict with keys: output (Path), cols, rows, pages, poster_width_cm,
+        poster_height_cm.
+    """
+    try:
+        import fitz  # pymupdf
+    except ImportError:
+        raise ImportError("pymupdf nicht installiert. Führe aus: pip install pymupdf")
+    try:
+        from PIL import Image
+    except ImportError:
+        raise ImportError("Pillow nicht installiert. Führe aus: pip install Pillow")
+
+    CM = 72 / 2.54  # cm -> PDF points
+    paper_sizes_cm = {
+        "A4": (21.0, 29.7),
+        "A3": (29.7, 42.0),
+        "Letter": (21.59, 27.94),
+        "Legal": (21.59, 35.56),
+    }
+    if paper not in paper_sizes_cm:
+        raise ValueError(f"Unbekanntes Papierformat: {paper}")
+
+    pw_cm, ph_cm = paper_sizes_cm[paper]
+    if orientation.lower() == "landscape":
+        pw_cm, ph_cm = ph_cm, pw_cm
+
+    # --- source page + aspect ratio --------------------------------------
+    doc = fitz.open(str(input_path))
+    if not (1 <= page_number <= doc.page_count):
+        raise ValueError(f"Seite {page_number} existiert nicht ({doc.page_count} Seiten).")
+    src = doc[page_number - 1]
+    src_w_pt = src.rect.width
+    src_h_pt = src.rect.height
+    aspect = src_h_pt / src_w_pt  # height / width
+
+    # --- resolve poster size (preserve aspect) ---------------------------
+    if target_height_cm is None:
+        poster_w_cm = target_width_cm
+        poster_h_cm = target_width_cm * aspect
+    else:
+        # reconcile both targets while keeping aspect
+        h_from_w = target_width_cm * aspect          # height if we honour width
+        w_from_h = target_height_cm / aspect         # width if we honour height
+        if fit == "contain":
+            if h_from_w <= target_height_cm:
+                poster_w_cm, poster_h_cm = target_width_cm, h_from_w
+            else:
+                poster_w_cm, poster_h_cm = w_from_h, target_height_cm
+        else:  # cover
+            if h_from_w >= target_height_cm:
+                poster_w_cm, poster_h_cm = target_width_cm, h_from_w
+            else:
+                poster_w_cm, poster_h_cm = w_from_h, target_height_cm
+
+    # --- printable area per tile and tile grid ---------------------------
+    printable_w_cm = pw_cm - 2 * margin_cm
+    printable_h_cm = ph_cm - 2 * margin_cm
+    if printable_w_cm <= overlap_cm or printable_h_cm <= overlap_cm:
+        raise ValueError("Rand/Überlappung zu groß für das Papierformat.")
+
+    import math
+    step_w_cm = printable_w_cm - overlap_cm
+    step_h_cm = printable_h_cm - overlap_cm
+    cols = max(1, math.ceil((poster_w_cm - overlap_cm) / step_w_cm))
+    rows = max(1, math.ceil((poster_h_cm - overlap_cm) / step_h_cm))
+
+    # --- render full poster raster ---------------------------------------
+    poster_w_px = max(1, round(poster_w_cm / 2.54 * dpi))
+    poster_h_px = max(1, round(poster_h_cm / 2.54 * dpi))
+    zoom_x = poster_w_px / src_w_pt
+    zoom_y = poster_h_px / src_h_pt
+    pix = src.get_pixmap(matrix=fitz.Matrix(zoom_x, zoom_y), alpha=False)
+    poster_img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+    doc.close()
+
+    printable_w_px = round(printable_w_cm / 2.54 * dpi)
+    printable_h_px = round(printable_h_cm / 2.54 * dpi)
+    step_w_px = round(step_w_cm / 2.54 * dpi)
+    step_h_px = round(step_h_cm / 2.54 * dpi)
+
+    # --- build the tiled PDF ---------------------------------------------
+    out_doc = fitz.open()
+    page_w_pt = pw_cm * CM
+    page_h_pt = ph_cm * CM
+    margin_pt = margin_cm * CM
+    printable_rect = fitz.Rect(
+        margin_pt, margin_pt,
+        page_w_pt - margin_pt, page_h_pt - margin_pt,
+    )
+
+    for r in range(rows):
+        for c in range(cols):
+            x0 = c * step_w_px
+            y0 = r * step_h_px
+            tile = Image.new("RGB", (printable_w_px, printable_h_px), "white")
+            # clamp the crop box to the poster so out-of-bounds areas stay white
+            cx0 = max(0, x0)
+            cy0 = max(0, y0)
+            cx1 = min(poster_img.width, x0 + printable_w_px)
+            cy1 = min(poster_img.height, y0 + printable_h_px)
+            if cx1 > cx0 and cy1 > cy0:
+                crop = poster_img.crop((cx0, cy0, cx1, cy1))
+                tile.paste(crop, (cx0 - x0, cy0 - y0))
+
+            import io
+            buf = io.BytesIO()
+            tile.save(buf, format="PNG")
+
+            page = out_doc.new_page(width=page_w_pt, height=page_h_pt)
+            page.insert_image(printable_rect, stream=buf.getvalue())
+            # cut/glue guide + label
+            page.draw_rect(printable_rect, color=(0.6, 0.6, 0.6), width=0.5)
+            label = f"Reihe {r + 1} / Spalte {c + 1}  ({r * cols + c + 1}/{rows * cols})"
+            page.insert_text(
+                fitz.Point(margin_pt, margin_pt - 4),
+                label, fontsize=8, color=(0.4, 0.4, 0.4),
+            )
+
+    out = Path(output_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out_doc.save(str(out))
+    out_doc.close()
+
+    return {
+        "output": out,
+        "cols": cols,
+        "rows": rows,
+        "pages": rows * cols,
+        "poster_width_cm": round(poster_w_cm, 1),
+        "poster_height_cm": round(poster_h_cm, 1),
+    }
+
+
 def preview_pdf(
     input_path: str | Path,
     output_path: str | Path | None = None,
