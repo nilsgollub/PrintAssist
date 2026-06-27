@@ -85,6 +85,7 @@ Drop a file into the chat and describe what you want:
 "Add a watermark"
 "Extract pages 2, 5 and 7"
 "Compress this PDF"
+"Print this as a poster across several A4 sheets so I can glue it together"
 
 # Office editing
 "Replace all occurrences of 'Draft' with 'Final'"

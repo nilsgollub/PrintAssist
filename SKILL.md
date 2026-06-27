@@ -40,6 +40,7 @@ Show me a preview before printing.
 | Print Office file (Word/Excel/PPT) | `scripts/print.py` | auto-converts via LibreOffice, then prints |
 | Print image/photo | `scripts/print.py` | Pillow + win32print |
 | 2-up (two pages side by side) | `scripts/pdf_tools.py` | `impose_2up(input, output)` |
+| Poster across multiple sheets (glue together) | `scripts/pdf_tools.py` | `tile_poster(input, output, target_width_cm, target_height_cm)` |
 | Merge PDFs | `scripts/pdf_tools.py` | `merge_pdfs(inputs, output)` |
 | Split PDF | `scripts/pdf_tools.py` | `split_pdf(input, output_dir, pages_per_file)` |
 | Rotate pages | `scripts/pdf_tools.py` | `rotate_pages(input, output, degrees, pages)` |
@@ -66,6 +67,11 @@ Pass as a dict to `print_file()`:
 | `scale` | `fit`, `shrink`, `noscale` | `"fit"` |
 | `pages` | SumatraPDF range string | `"1-3,5"` |
 | `copies` | integer | `2` |
+
+> ⚠️ The Brother MFC-L8390CDW defaults to **double-sided**. If `duplex` is not
+> set, the printer uses its own default (duplex). For posters/tiles, photos and
+> labels — anything that needs one page per sheet — always pass `simplex`
+> explicitly. Tiled posters must also use `scale: noscale` so the pieces line up.
 
 ## Setup
 

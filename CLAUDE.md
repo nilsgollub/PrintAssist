@@ -16,6 +16,7 @@ Ein Projekt, das Drucken, PDF-Bearbeitung, Office-Bearbeitung und Foto-Bearbeitu
 | PDF: Merge, Split, Rotation, Wasserzeichen, Seitenbereich | `pypdf` / `pikepdf` (`scripts/pdf_tools.py`) |
 | PDF: reinen Text ändern | **nicht automatisierbar** – Nutzer auf Acrobat verweisen |
 | PDF verkleinern / optimieren | `pdf_tools.compress_pdf()` (pikepdf) |
+| Poster: PDF/Bild größer als A4 über mehrere Blätter zum Zusammenkleben | `pdf_tools.tile_poster()` – danach mit `scale=noscale` + `duplex=simplex` drucken |
 | Office (Word/Excel/PowerPoint): Inhalte bearbeiten | `python-docx`, `openpyxl`, `python-pptx` (`scripts/office_tools.py`) |
 | Office → PDF konvertieren (vor dem Drucken) | LibreOffice headless |
 | PDF drucken | SumatraPDF CLI (`scripts/print.py`) |
@@ -61,6 +62,7 @@ Faustregel: Python zuerst für strukturelle/mechanische Änderungen. Adobe-Conne
 1. Eingabedatei identifizieren (Typ per Endung/MIME).
 2. Falls Office-Datei: erst mit LibreOffice headless zu PDF konvertieren.
 3. Aus der Nutzerbeschreibung Druckparameter ableiten: Papierformat, Ausrichtung, Duplex, Farbe/SW, Skalierung, Seitenbereich, Kopienzahl.
+   - **Duplex-Default beachten**: Der Brother MFC-L8390CDW druckt standardmäßig beidseitig. Wird `duplex` nicht gesetzt, nutzt der Drucker seinen eigenen Default (Duplex). Bei Postern/Kacheln, Fotos und Etiketten – alles mit einer Seite pro Blatt – **immer explizit `duplex=simplex`** mitgeben. Poster zusätzlich mit `scale=noscale`, sonst passen die Kacheln nicht zusammen.
 4. Zieldrucker aus `config/printers.yaml` anhand Hostname auflösen (falls Nutzer keinen explizit nennt).
 5. SumatraPDF mit `-print-to` + `-print-settings` aufrufen.
 6. Kurze Erfolgsmeldung im Chat (kein Vorschau-Zwang, da direkt gedruckt wird).
