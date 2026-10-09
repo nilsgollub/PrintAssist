@@ -14,48 +14,36 @@ Ein Projekt, das Drucken, PDF-Bearbeitung, Office-Bearbeitung und Foto-Bearbeitu
 | Aufgabe | Werkzeug |
 |---|---|
 | PDF: Merge, Split, Rotation, Wasserzeichen, Seitenbereich | `pypdf` / `pikepdf` (`scripts/pdf_tools.py`) |
-| PDF: reinen Text ändern | **nicht automatisierbar** – Nutzer auf Acrobat verweisen |
+| PDF: reinen Text ändern | **nicht automatisierbar** – Nutzer auf einen PDF-Editor verweisen |
 | PDF verkleinern / optimieren | `pdf_tools.compress_pdf()` (pikepdf) |
 | Poster: PDF/Bild größer als A4 über mehrere Blätter zum Zusammenkleben | `pdf_tools.tile_poster()` – danach mit `scale=noscale` + `duplex=simplex` drucken |
 | Office (Word/Excel/PowerPoint): Inhalte bearbeiten | `python-docx`, `openpyxl`, `python-pptx` (`scripts/office_tools.py`) |
 | Office → PDF konvertieren (vor dem Drucken) | LibreOffice headless |
 | PDF drucken | SumatraPDF CLI (`scripts/print.py`) |
 | Foto/Bild drucken | `scripts/print.py` (Pillow + win32print) |
+| Foto vor dem Druck bearbeiten | `scripts/image_tools.py` (siehe unten) |
 | Office-Datei drucken | erst → PDF (LibreOffice), dann SumatraPDF |
 
-Faustregel: Python zuerst für strukturelle/mechanische Änderungen. Adobe-Connector für alles Optische/KI-gestützte.
+Faustregel: alles in Python, keine Cloud-Dienste. Fotobearbeitung über `scripts/image_tools.py` (Pillow, Hintergrund freistellen lokal per `rembg`).
 
-## Adobe CC – Tool-Routing
+## Fotobearbeitung – `scripts/image_tools.py`
 
-| Aufgabe | Adobe-Tool |
+| Aufgabe | Funktion / CLI |
 |---|---|
-| Belichtung, Helligkeit, Kontrast korrigieren | `image_adjust_exposure` / `image_adjust_brightness_and_contrast` |
-| Weißabgleich / Farbtemperatur | `image_adjust_color_temperature` |
-| Highlights & Schatten | `image_adjust_highlights` / `image_adjust_dark_portions` / `image_adjust_light_portions` |
-| Sättigung, Vibrance | `image_adjust_vibrance_and_saturation` |
-| Einzelne Farbe entsättigen / boosten | `image_adjust_single_color_saturation` |
-| HSL (Farbton, Sättigung, Helligkeit) | `image_adjust_hsl` |
-| Alles auf einmal (mehrere Anpassungen) | `image_apply_adjustments` |
-| Automatische Tonkorrektur | `image_apply_auto_tone` |
-| Lightroom-Preset anwenden | `image_apply_preset` (verfügbare Presets: `image_list_presets`) |
-| Gerade richten | `image_auto_straighten` |
-| Zuschneiden / auf Druckformat bringen | `image_crop_and_resize` / `image_crop_to_bounds` |
-| Bild KI-gestützt erweitern (Seitenverhältnis passt nicht) | `image_generative_expand` |
-| Hintergrund entfernen (Freistellen) | `image_remove_background` |
-| Motiv auswählen | `image_select_subject` |
-| Bereich per Text auswählen | `image_select_by_prompt` |
-| Bereich generativ auffüllen / ersetzen | `image_fill_area` |
-| Foto/Logo vektorisieren (für skalierbaren Druck) | `image_vectorize` |
-| Mehrere Fotos einheitlich bearbeiten (gleicher Look) | Skill `adobe-batch-edit-photos` |
-| Datei zu PDF konvertieren (Alternative zu LibreOffice) | `document_convert_pdf` |
-| CSV + InDesign-Template → personalisierte PDFs | `document_merge_data_layout` |
-| Unschärfe (Hintergrund weichzeichnen) | `image_apply_gaussian_blur` / `image_apply_lens_blur` |
-| Stileffekte (Körnung, Rauschen, Halftone, Tint) | `image_add_grain` / `image_add_noise` / `image_apply_halftone` / `image_apply_monochromatic_tint` |
+| Belichtung (Blendenstufen), Helligkeit, Kontrast, Sättigung, Farbtemperatur, Schärfe – einzeln oder alles auf einmal | `adjust(input, output, exposure=0, brightness=1, contrast=1, saturation=1, temperature=0, sharpness=1)` / `adjust` |
+| Automatische Tonkorrektur | `auto_tone(input, output, per_channel=False)` / `auto-tone` (`--per-channel` entfernt auch Farbstiche, kann aber übersteuern) |
+| Automatischer Weißabgleich | `white_balance(input, output)` / `white-balance` |
+| Schwarzweiß | `grayscale(input, output)` / `grayscale` |
+| Zuschneiden / auf Druckformat bringen (A4, A5, A6, Letter, 10x15, 13x18, 9x13) | `fit_paper(input, output, paper, mode="fill"\|"fit", orientation, dpi=300, margin_mm=0)` / `fit-paper` |
+| Hintergrund entfernen (Freistellen) | `remove_background(input, output, background=None\|"white", model="u2net")` / `remove-bg` (braucht `rembg`, Modell ~170 MB wird beim ersten Aufruf geladen) |
 
-### Was Adobe CC nicht kann (direkt sagen, nicht versuchen)
+Aufruf: `python scripts/image_tools.py <befehl> <input> <output> [optionen]`. EXIF-Drehung wird angewendet, ICC-Profil bleibt erhalten. `fit_paper` warnt unter 150 dpi.
+
+### Was nicht geht (direkt sagen, nicht versuchen)
 - PDF-Text bearbeiten ✗
 - Bild über natürliche Auflösung hinaus hochskalieren ✗
-- Hintergrund generativ neu erstellen (nur entfernen) ✗
+- Hintergrund generativ neu erstellen oder Bild KI-gestützt erweitern ✗ (nur freistellen und mit einfarbigem Hintergrund oder weißem Rand auffüllen)
+- Lightroom-Presets, Vektorisieren, Bereiche generativ füllen ✗
 
 ## Druck-Workflow (SumatraPDF)
 
@@ -71,7 +59,7 @@ Faustregel: Python zuerst für strukturelle/mechanische Änderungen. Adobe-Conne
 
 - Niemals Platzhalter-Code wie "// Rest wie vorher" – immer vollständige Skripte/Funktionen.
 - Sprache: Deutsch oder Englisch. Andere Sprachen automatisch übersetzen.
-- Bei Adobe-Connector-Aufrufen: Tool-Limitierungen beachten (kein PDF-Textediting, kein Upscaling, keine generative Hintergrund-Ersetzung) – wenn eine Anfrage das verlangt, das dem Nutzer kurz sagen statt es stillschweigend zu versuchen.
+- Grenzen der Fotobearbeitung beachten (kein PDF-Textediting, kein Upscaling, nichts Generatives) – wenn eine Anfrage das verlangt, das dem Nutzer kurz sagen statt es stillschweigend zu versuchen.
 - Geräteerkennung über `socket.gethostname()` in Python, Mapping in `config/printers.yaml`.
 - **Vorschau-Workflow**: `preview_pdf()` aufrufen, PNG als `preview.png` in den Projektordner kopieren und dem Nutzer sagen, er soll es im VS Code Explorer anklicken. `Start-Process`/`Invoke-Item` funktionieren nicht (Sandbox). `SendUserFile` und `Read` zeigen keine Bilder inline im VSCode-Chat.
 
@@ -92,9 +80,6 @@ pip install -r requirements.txt
 #    Dann config/printers.yaml editieren – Platzhalter <HOSTNAME-...> durch
 #    echten Hostnamen (socket.gethostname()) und <Druckername-...> durch
 #    den exakten Windows-Druckernamen ersetzen.
-
-# 5. Adobe MCP-Connector authentifizieren (einmalig pro Gerät):
-#    In Claude Code: /mcp  → adobe-creativity → einloggen
 ```
 
 ## Einrichtung auf neuem Gerät
@@ -103,7 +88,6 @@ pip install -r requirements.txt
 git clone https://github.com/nilsgollub/PrintAssist.git
 cd PrintAssist
 powershell -ExecutionPolicy Bypass -File setup.ps1
-# danach: /mcp -> adobe-creativity einloggen (optional)
 ```
 
 `setup.ps1` erkennt Drucker automatisch und schreibt `config/printers.yaml`.
@@ -116,5 +100,5 @@ sauberste Lösung: Datei vom Handy schicken, Druckanweisung in Freitext, Claude 
 die Skripte direkt aus – kein Telegram-Bot, kein extra Setup.
 
 **Voraussetzung:** Ein dauerhaft laufendes Gerät (Homeserver geplant).
-Die Skripte (print.py, pdf_tools.py, office_tools.py) sind bereits Dispatch-kompatibel –
+Die Skripte (print.py, pdf_tools.py, office_tools.py, image_tools.py) sind bereits Dispatch-kompatibel –
 kein Umbau nötig, sobald der Server steht.

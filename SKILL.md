@@ -1,6 +1,6 @@
 ---
 name: print-assist
-description: Print any file (PDF, Word, Excel, PowerPoint, photos) with a plain-language instruction. Handles 2-up layout, duplex, page ranges, rotation, watermarks, and photo editing via Adobe CC — without touching a single print dialog.
+description: Print any file (PDF, Word, Excel, PowerPoint, photos) with a plain-language instruction. Handles 2-up layout, duplex, page ranges, rotation, watermarks, and photo editing (exposure, color, crop, background removal) with free local tools — without touching a single print dialog.
 version: 0.1.0
 emoji: 🖨️
 homepage: https://github.com/nilsgollub/PrintAssist
@@ -52,7 +52,9 @@ Show me a preview before printing.
 | Edit Excel cells | `scripts/office_tools.py` | `write_cell_xlsx()`, `replace_value_xlsx()` |
 | Edit PowerPoint slides | `scripts/office_tools.py` | `replace_text_pptx()`, `add_slide_pptx()` |
 | Preview before printing | `scripts/pdf_tools.py` | `preview_pdf()` → copy to `preview.png` |
-| Photo editing (exposure, crop, bg remove) | Adobe CC MCP connector | see Adobe routing table in CLAUDE.md |
+| Photo editing (exposure, color, auto tone, white balance) | `scripts/image_tools.py` | `adjust()`, `auto_tone()`, `white_balance()`, `grayscale()` |
+| Crop photo to paper size | `scripts/image_tools.py` | `fit_paper(input, output, paper, mode)` |
+| Remove photo background | `scripts/image_tools.py` | `remove_background(input, output, background)` (needs `rembg`) |
 
 ## Print parameters
 

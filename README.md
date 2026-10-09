@@ -9,7 +9,7 @@ Print any file with a plain-language instruction. No more fighting with print di
 "Remove the background from this photo and print it on A4."
 ```
 
-Works with **PDF**, **Word/Excel/PowerPoint**, and **photos**. Integrates with **Adobe Creative Cloud** for photo editing (exposure, crop, background removal, presets) before printing.
+Works with **PDF**, **Word/Excel/PowerPoint**, and **photos**. Photos can be edited before printing (exposure, color, crop to paper size, background removal) with free local tools: Pillow and [rembg](https://github.com/danielgatis/rembg).
 
 > Built for [Claude Code](https://claude.ai/code) and [OpenClaw](https://openclaw.ai/) on Windows.
 
@@ -23,8 +23,6 @@ Works with **PDF**, **Word/Excel/PowerPoint**, and **photos**. Integrates with *
 | SumatraPDF | PDF printing via CLI | auto via `setup.ps1` |
 | LibreOffice | Office → PDF conversion | auto via `setup.ps1` |
 | winget | Package manager | built into Windows 11 |
-
-Optional: Adobe Creative Cloud subscription for photo editing via the Adobe MCP connector.
 
 ---
 
@@ -63,9 +61,9 @@ hosts:
 Find your printer names: `wmic printer get name`  
 Find your hostname: `$env:COMPUTERNAME`
 
-### Adobe CC (optional)
+### Background removal (optional)
 
-Open Claude Code and run `/mcp`, then authenticate with `adobe-creativity`. Required only for photo editing features (background removal, exposure, presets, etc.).
+`rembg` is in `requirements.txt`. On first use it downloads its model (~170 MB) to `~/.u2net` / `~/.rembg`. All other photo edits only need Pillow.
 
 ---
 
@@ -92,10 +90,10 @@ Drop a file into the chat and describe what you want:
 "Set cell B3 in sheet 'Sales' to 42"
 "Add a slide with title 'Q3 Results'"
 
-# Photos (requires Adobe CC)
+# Photos
 "Remove the background"
 "Fix the exposure and print on A4"
-"Apply a cinematic preset and print"
+"Make it warmer and a bit more saturated"
 "Crop to 10×15 cm"
 
 # Preview
@@ -130,6 +128,7 @@ PrintAssist/
 └── scripts/
     ├── print.py              # Print dispatcher (PDF / Office / image)
     ├── pdf_tools.py          # Merge, split, rotate, watermark, encrypt…
+    ├── image_tools.py        # Photo edits: exposure, color, crop to paper, bg removal
     └── office_tools.py       # Word, Excel, PowerPoint editing
 ```
 
@@ -137,7 +136,8 @@ PrintAssist/
 
 ## Limitations
 
-- **PDF text editing** is not possible with these tools — use Adobe Acrobat
+- **PDF text editing** is not possible with these tools — use a PDF editor
+- **No generative photo edits** (expand, fill, replace background) and no upscaling beyond native resolution
 - **Windows only** (SumatraPDF + win32print)
 - **Wake-on-LAN over WiFi** is unreliable — remote printing requires the PC to be on
 

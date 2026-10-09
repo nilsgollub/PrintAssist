@@ -138,7 +138,7 @@ Write-OK "SKILL.md -> $claudeSkillFile"
 if (Test-Path $claudeGlobal) {
     $content = Get-Content $claudeGlobal -Raw -ErrorAction SilentlyContinue
     if ($content -notmatch "print-assist") {
-        $entry = "`r`n# print-assist`r`n- **print-assist** (``~/.claude/skills/print-assist/SKILL.md``) - Dateien drucken (PDF, Word, Excel, PowerPoint, Fotos), PDF bearbeiten, Fotos via Adobe CC bearbeiten. Trigger: ``/print-assist``, oder wenn der Nutzer etwas drucken oder eine Datei vor dem Druck bearbeiten will."
+        $entry = "`r`n# print-assist`r`n- **print-assist** (``~/.claude/skills/print-assist/SKILL.md``) - Dateien drucken (PDF, Word, Excel, PowerPoint, Fotos), PDF bearbeiten, Fotos bearbeiten (Belichtung, Farbe, Zuschnitt, Hintergrund). Trigger: ``/print-assist``, oder wenn der Nutzer etwas drucken oder eine Datei vor dem Druck bearbeiten will."
         Add-Content $claudeGlobal $entry -Encoding UTF8
         Write-OK "Registered in ~/.claude/CLAUDE.md"
     } else {
@@ -147,13 +147,6 @@ if (Test-Path $claudeGlobal) {
 } else {
     Write-Warn "~/.claude/CLAUDE.md not found - Claude Code not installed yet? Install it and re-run setup.ps1."
 }
-
-# ---------------------------------------------------------------------------
-# 6. Adobe MCP hint
-# ---------------------------------------------------------------------------
-Write-Step "Adobe CC (optional)"
-Write-Host "    For photo editing features, open Claude Code and run: /mcp" -ForegroundColor White
-Write-Host "    Then select 'adobe-creativity' and sign in." -ForegroundColor White
 
 # ---------------------------------------------------------------------------
 # Done
